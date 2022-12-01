@@ -9,31 +9,18 @@ fn main() {
         .split("\n\n")
         .map(|elf_load| {
             elf_load
-                .split('\n')
-                .filter_map(|calory_value| {
-                    calory_value
-                        .parse::<i32>()
-                        .ok()
-                })
+                .lines()
+                .filter_map(|calory_value| calory_value.parse::<i32>().ok())
                 .sum()
-        }).collect();
+        })
+        .collect();
 
-
-    let largest_calory_load: i32 = all_calory_loads.iter().max().unwrap().clone();
-
-    let mut top_three_loads: i32 = 0;
-    let mut times: i32 = 0;
-
-    while times < 3 {
-        let current_largest: i32;
-        current_largest = all_calory_loads.iter().max().unwrap().clone();
-
-        top_three_loads += current_largest;
-        all_calory_loads.retain(|load| *load != current_largest);
-        times+= 1;
-    };
+    all_calory_loads.sort();
+    let largest_calory_load: i32 = *all_calory_loads.iter().max().unwrap();
+    let top_three_loads: i32 = all_calory_loads[all_calory_loads.len() - 1]
+        + all_calory_loads[all_calory_loads.len() - 2]
+        + all_calory_loads[all_calory_loads.len() - 3];
 
     dbg!(top_three_loads);
-
     dbg!(largest_calory_load);
 }
