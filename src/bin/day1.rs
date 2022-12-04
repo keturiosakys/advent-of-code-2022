@@ -1,7 +1,7 @@
 use std::fs;
 
 fn main() {
-    let file_path = "calories_input.txt";
+    let file_path = "./inputs/day1.txt";
 
     let calories_input = fs::read_to_string(file_path).expect("Couldn't read file");
 
