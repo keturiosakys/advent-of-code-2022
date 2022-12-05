@@ -75,7 +75,7 @@ fn find_play((opp, outcome): (Play, Outcome)) -> Play {
 }
 
 fn main() {
-    let file_data = std::fs::read_to_string("./inputs/day2.txt").expect("Failed to read the file!");
+    let file_data = std::fs::read_to_string("src/inputs/day2.txt").expect("Failed to read the file!");
 
     let first_score: i32 = file_data
         .split("\n")

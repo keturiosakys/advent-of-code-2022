@@ -25,17 +25,17 @@ impl Priority {
 }
 
 fn main() {
-    let file_data = std::fs::read_to_string("./inputs/day3.txt").expect("Failed to read the file!");
-    let parsed: Vec<&str> = file_data.split("\n").collect();
+    let file_data = std::fs::read_to_string("src/inputs/day3.txt").expect("Failed to read the file!");
 
-    let overlap = get_overlapping_score(&parsed);
-    let badges = get_badges_score(&parsed);
+    let overlap = get_overlapping_score(&file_data);
+    let badges = get_badges_score(&file_data);
 
     println!("Item overlap priority sum is {:?}", &overlap);
     println!("Badges priority sum is {:?}", &badges);
 }
 
-fn get_badges_score(rucksacks: &Vec<&str>) -> i32 {
+fn get_badges_score(input: &str) -> i32 {
+    let rucksacks: Vec<&str> = input.split("\n").collect();
     let badges: Vec<_> = rucksacks
         .chunks(3)
         .filter_map(|group| {
@@ -51,10 +51,9 @@ fn get_badges_score(rucksacks: &Vec<&str>) -> i32 {
                         };
                     })
                     .take();
-
                 return badge;
             } else {
-                return None
+                return None;
             };
         })
         .collect();
@@ -63,7 +62,8 @@ fn get_badges_score(rucksacks: &Vec<&str>) -> i32 {
     return score;
 }
 
-fn get_overlapping_score(rucksacks: &Vec<&str>) -> i32 {
+fn get_overlapping_score(input: &str) -> i32 {
+    let rucksacks: Vec<&str> = input.split("\n").collect();
     let overlap = rucksacks
         .iter()
         .filter_map(|rucksack| {
@@ -111,4 +111,22 @@ fn score(items: Vec<char>) -> i32 {
             return rank;
         })
         .sum();
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+    const TEST_INPUT: &str = include_str!("../test_inputs/day3.test.txt");
+
+    #[test]
+    fn solve_overlapping_success() {
+        assert_eq!(get_overlapping_score(TEST_INPUT), 78)
+    }
+
+    #[test]
+    fn solve_badges_success() {
+        assert_eq!(get_badges_score(TEST_INPUT), 20)
+    }
 }
