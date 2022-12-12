@@ -1,65 +1,76 @@
-use std::{collections::HashSet, fmt::Debug, ops::AddAssign};
-
 // The whole tree data type is devised from this blog post:
 // https://dev.to/deciduously/no-more-tears-no-more-knots-arena-allocated-trees-in-rust-44k6
 
-#[derive(Debug, Default)]
-struct Tree<T>
-where
-    T: PartialEq,
-{
-    nodes: Vec<Node<T>>,
-}
-
-#[derive(Debug, Clone)]
-struct Node<T> {
-    idx: usize,
+#[derive(Debug)]
+struct Directory {
     parent: Option<usize>,
-    children: Vec<usize>,
-    dir: T,
-    size: i32,
+    size: Option<i32>,
+    name: String,
 }
 
-impl<T> Node<T> {
-    fn new(idx: usize, dir: T) -> Self {
+impl Directory {
+    fn new(dir: &str) -> Self {
         return Self {
-            idx,
-            dir,
             parent: None,
-            children: vec![],
-            size: 0,
+            size: None,
+            name: dir.to_string(),
         };
     }
+
+    /*fn update_size(&mut self, amount: i32) -> Self {
+        self.size = Some(amount);
+        return self;
+    }*/
 }
 
-impl<T> Tree<T>
-where
-    T: PartialEq + Debug,
-{
-    fn node(&mut self, dir: T) -> usize {
-        for node in &self.nodes {
-            if node.dir == dir {
-                return node.idx;
+#[derive(Debug, Default)]
+struct FileTree {
+    nodes: Vec<Directory>,
+}
+
+impl FileTree {
+    fn node(&mut self, pwd: usize, dir: &str) -> usize {
+        if let Some(idx) = self.get_node_in_level(pwd, dir) {
+            return idx;
+        } else {
+            return self.create_node(dir);
+        };
+    }
+
+    fn get_node_in_level(&mut self, pwd: usize, dir: &str) -> Option<usize> {
+        for (idx, node) in self.nodes.iter().enumerate() {
+            if node.name == dir && node.parent == Some(pwd) {
+                return Some(idx);
+            } else {
+                return None;
             }
         }
+        return None;
+    }
 
+    fn get_node(&mut self, dir: &str) -> Option<usize> {
+        for (idx, node) in self.nodes.iter().enumerate() {
+            if node.name == dir {
+                return Some(idx);
+            } else {
+                return None;
+            }
+        }
+        return None;
+    }
+
+    fn create_node(&mut self, dir: &str) -> usize {
         let idx = self.nodes.len();
-
-        self.nodes.push(Node::new(idx, dir));
+        self.nodes.push(Directory::new(dir));
         return idx;
     }
 
-    fn find_size(&self, idx: usize) -> i32 {
-        let node = &self.nodes[idx];
-        let mut size = node.size;
+    fn add_size(&mut self, pwd: usize, size: i32) -> () {
+        self.nodes[pwd].size = Some(size + self.nodes[pwd].size.unwrap_or(0));
 
-        println!("in find_size {:?}", node);
-
-        for child in node.children.iter() {
-            size += self.find_size(*child);
+        if let Some(value) = self.nodes[pwd].parent {
+            self.add_size(value, size);
         }
-
-        return size;
     }
 }
 
@@ -74,52 +85,59 @@ fn main() {
 fn calc_small(input_data: &str) -> i32 {
     static LIMIT: i32 = 100000;
     let dirs = parse_input(input_data);
-    dbg!(&dirs);
-    let mut sized_dirs = vec![];
 
-    for node in dirs.nodes.clone() {
-        println!("{:?}", node);
-        let size = dirs.find_size(node.idx);
-        if size < LIMIT {
-            sized_dirs.push(size)
-        }
-    }
+    return dirs
+        .nodes
+        .iter()
+        .filter_map(|node| {
+            if let Some(value) = node.size {
+                if value < LIMIT {
+                    return Some(node.size.unwrap());
+                } else {
+                    return None;
+                }
+            } else {
+                return None;
+            }
+        })
+        .sum::<i32>();
 
-    return sized_dirs.iter().sum();
 }
 
-fn parse_input(input_data: &str) -> Tree<String> {
-    let mut file_tree = Tree::default();
-    let mut curr_idx = 0;
-
+fn parse_input(input_data: &str) -> FileTree {
+    let mut file_tree = FileTree::default();
+    let mut pwd = 0;
     for mut line in input_data.lines() {
         line = line.strip_prefix("$ ").unwrap_or(line);
         let mut line_iter = line.split_whitespace();
 
         match (line_iter.next(), line_iter.next()) {
-            (Some("dir"), Some(dir)) => {
-                let dir_idx = file_tree.node(dir.to_owned());
-                file_tree.nodes[dir_idx].parent = Some(curr_idx);
-                file_tree.nodes[curr_idx].children.push(dir_idx);
-            }
-            (Some("cd"), Some("..")) => {
-                if let Some(parent_idx) = file_tree.nodes[curr_idx].parent {
-                    curr_idx = parent_idx;
-                } else {
-                    panic!("Attempting to index beyond root / ")
-                }
-            }
             (Some("cd"), Some("/")) => {
-                curr_idx = file_tree.node("/".to_owned());
+                pwd = file_tree.create_node("/");
             }
+
+            (Some("cd"), Some("..")) => {
+                pwd = file_tree.nodes[pwd]
+                    .parent
+                    .expect("Attempting to cd beyond root");
+            }
+
             (Some("cd"), Some(dir)) => {
-                curr_idx = file_tree.node(dir.to_owned());
+                let parent = pwd;
+                pwd = file_tree.node(pwd, dir);
+                file_tree.nodes[pwd].parent = Some(parent);
             }
+
+            (Some("dir"), Some(_)) => continue,
+
             (Some(number), Some(_)) => {
-                let size = number.parse::<i32>().expect("Not a number");
-                file_tree.nodes[curr_idx].size.add_assign(size);
+                let size: i32 = number
+                    .parse()
+                    .expect("Attempting to parse a non-numeric value");
+                file_tree.add_size(pwd, size);
             }
-            _ => continue, //ignore the rest
+
+            _ => continue,
         }
     }
 
