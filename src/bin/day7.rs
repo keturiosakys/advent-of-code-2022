@@ -16,11 +16,6 @@ impl Directory {
             name: dir.to_string(),
         };
     }
-
-    /*fn update_size(&mut self, amount: i32) -> Self {
-        self.size = Some(amount);
-        return self;
-    }*/
 }
 
 #[derive(Debug, Default)]
@@ -37,7 +32,7 @@ impl FileTree {
         };
     }
 
-    fn get_node_in_level(&mut self, pwd: usize, dir: &str) -> Option<usize> {
+    fn get_node_in_level(&self, pwd: usize, dir: &str) -> Option<usize> {
         for (idx, node) in self.nodes.iter().enumerate() {
             if node.name == dir && node.parent == Some(pwd) {
                 return Some(idx);
@@ -48,7 +43,7 @@ impl FileTree {
         return None;
     }
 
-    fn get_node(&mut self, dir: &str) -> Option<usize> {
+    fn get_node(&self, dir: &str) -> Option<usize> {
         for (idx, node) in self.nodes.iter().enumerate() {
             if node.name == dir {
                 return Some(idx);
@@ -72,36 +67,6 @@ impl FileTree {
             self.add_size(value, size);
         }
     }
-}
-
-fn main() {
-    let input_data =
-        std::fs::read_to_string("src/inputs/day7.txt").expect("Failed to read the file!");
-
-    let small_dir_size = calc_small(&input_data);
-    println!("{}", small_dir_size);
-}
-
-fn calc_small(input_data: &str) -> i32 {
-    static LIMIT: i32 = 100000;
-    let dirs = parse_input(input_data);
-
-    return dirs
-        .nodes
-        .iter()
-        .filter_map(|node| {
-            if let Some(value) = node.size {
-                if value < LIMIT {
-                    return Some(node.size.unwrap());
-                } else {
-                    return None;
-                }
-            } else {
-                return None;
-            }
-        })
-        .sum::<i32>();
-
 }
 
 fn parse_input(input_data: &str) -> FileTree {
@@ -144,6 +109,58 @@ fn parse_input(input_data: &str) -> FileTree {
     return file_tree;
 }
 
+fn main() {
+    let input_data =
+        std::fs::read_to_string("src/inputs/day7.txt").expect("Failed to read the file!");
+
+    let small_dir_size = calc_small(&input_data);
+    let smallest_necessary = calc_smallest_necessary(&input_data);
+    println!("{}", small_dir_size);
+    println!("{}", smallest_necessary);
+}
+
+fn calc_smallest_necessary(input_data: &str) -> i32 {
+    static TOTAL: i32 = 70000000;
+    static UPDATE_SIZE: i32 = 30000000;
+    let dirs = parse_input(input_data);
+    let occupied = &dirs.nodes[dirs.get_node("/").unwrap()].size.unwrap();
+
+    return dirs
+        .nodes
+        .iter()
+        .filter_map(|node| {
+            let remaining = occupied - node.size.unwrap();
+            if remaining + UPDATE_SIZE <= TOTAL {
+                return node.size;
+            } else {
+                return None;
+            }
+        })
+        .min()
+        .unwrap();
+}
+
+fn calc_small(input_data: &str) -> i32 {
+    static LIMIT: i32 = 100000;
+    let dirs = parse_input(input_data);
+
+    return dirs
+        .nodes
+        .iter()
+        .filter_map(|node| {
+            if let Some(value) = node.size {
+                if value < LIMIT {
+                    return Some(node.size.unwrap());
+                } else {
+                    return None;
+                }
+            } else {
+                return None;
+            }
+        })
+        .sum::<i32>();
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -154,5 +171,10 @@ mod tests {
     #[test]
     fn check_file_size() {
         assert_eq!(calc_small(TEST_INPUT), 95437);
+    }
+
+    #[test]
+    fn check_smallest_deletable_dir() {
+        assert_eq!(calc_smallest_necessary(TEST_INPUT), 24933642)
     }
 }
