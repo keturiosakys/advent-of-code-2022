@@ -19,10 +19,6 @@ impl Pair {
         }
     }
 
-    fn flatten(&self) -> Vec<(u8, u8)> {
-        return vec![self.first_assignment, self.second_assignment];
-    }
-
     fn parse_assignment(assign_data: &str) -> Assignment {
         let (start_data, end_data) = assign_data.split_once("-").expect("no - found");
         let start = start_data.parse::<u8>().expect("not a u8");
@@ -87,56 +83,22 @@ fn is_fully_contained(
     }
 }
 
-fn calc_all_overlap(input: &str) -> i32 {
-    let assignments = parse_input(input);
+fn calc_all_overlap(file_data: &str) -> i32 {
+    let assignments = parse_input(file_data);
 
-    let mut intervals: Vec<Assignment> = assignments
+    return assignments
         .iter()
         .filter_map(|pair| {
             let (first_start, first_end) = pair.first_assignment;
             let (second_start, second_end) = pair.second_assignment;
 
-            if first_start <= second_end && second_start <= first_end {
-                match (first_start.cmp(&second_start), first_end.cmp(&second_end)) {
-                    (Less, Less) => return Some((first_start, second_end)),
-                    (Less, Equal) => return Some((first_start, first_end)),
-                    (Less, Greater) => return Some((first_start, first_end)),
-                    (Equal, Less) => return Some((first_start, second_end)),
-                    (Equal, Equal) => return Some((first_start, first_end)),
-                    (Equal, Greater) => return Some((first_start, first_end)),
-                    (Greater, Less) => return Some((second_start, first_end)),
-                    (Greater, Equal) => return Some((second_start, second_end)),
-                    (Greater, Greater) => return Some((second_start, second_end)),
-                }
+            if first_start <= second_end && first_end >= second_start {
+                return Some(pair);
             } else {
                 return None;
             }
         })
-        .collect();
-
-    intervals.sort_by_key(|interval| (interval.0, interval.1));
-
-    let mut overlapping: Vec<Assignment> = vec![];
-
-    let mut intervals_iter = intervals.iter();
-    let first_interval = intervals_iter.next().expect("Got an empty iterator"); // first iterator WILL have value
-    overlapping.push(*first_interval);
-    let (_, end_first) = first_interval;
-    let mut end_previous = end_first;
-
-    for interval in intervals_iter {
-        let (start_current, end_current) = interval;
-        if start_current <= end_previous {
-            end_previous = end_current;
-            overlapping.push(*interval);
-            continue;
-        } else {
-            end_previous = end_current;
-            continue;
-        }
-    }
-
-    return overlapping.iter().count() as i32;
+        .count() as i32;
 }
 
 #[cfg(test)]

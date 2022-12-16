@@ -45,9 +45,7 @@ fn get_badges_score(input: &str) -> i32 {
                     .find_map(|item| {
                         match (second.contains(item), third.contains(item)) {
                             (true, true) => return Some(item),
-                            (true, false) => return None,
-                            (false, true) => return None,
-                            (false, false) => return None,
+                            _ => return None,
                         };
                     })
                     .take();
